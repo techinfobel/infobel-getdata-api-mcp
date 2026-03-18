@@ -1,0 +1,8 @@
+venv/
+.coverage
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+notebooks/
+.ipynb_checkpoints/
+.claude
