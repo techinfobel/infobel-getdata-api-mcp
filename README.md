@@ -1,4 +1,4 @@
-# infobel-api
+# infobel-api-mcp
 
 Python client and MCP server for the [Infobel](https://www.infobelpro.com/) GetData API.
 
@@ -6,11 +6,53 @@ Python client and MCP server for the [Infobel](https://www.infobelpro.com/) GetD
 
 ## Installation
 
+From PyPI:
+
+```bash
+pip install infobel-api-mcp
+```
+
+For local development:
+
 ```bash
 pip install -e .
 ```
 
-Requires Python 3.11+.
+Requires Python 3.10+.
+
+---
+
+## Quick start — configure your agent
+
+After installing, run one command to wire infobel-mcp into your agent host:
+
+```bash
+# User-global config (prompts for credentials)
+infobel-mcp add claude       # writes ~/.claude.json
+infobel-mcp add codex        # writes ~/.codex/config.toml
+infobel-mcp add gemini       # writes ~/.gemini/settings.json (uses env var placeholders)
+
+# Project-local config (cwd)
+infobel-mcp add claude --local
+infobel-mcp add codex  --local
+infobel-mcp add gemini --local
+
+# Project-local config at a specific path
+infobel-mcp add claude --local /path/to/project
+
+# Skip the interactive prompts
+infobel-mcp add claude --username myuser --password mypass
+
+# Write ${INFOBEL_USERNAME}/${INFOBEL_PASSWORD} placeholders instead of literal creds
+infobel-mcp add claude --use-env-vars
+```
+
+After running the command, set your credentials as environment variables:
+
+```bash
+export INFOBEL_USERNAME="your-username"
+export INFOBEL_PASSWORD="your-password"
+```
 
 ---
 
@@ -44,8 +86,10 @@ with InfobelClient() as client:
     result = client.search.search(country_codes="GB", business_name="Acme")
 
     print(result["counts"]["total"])       # total matching businesses
-    print(result["firstPageRecords"][0])   # first record (all fields)
+    print(result["firstPageRecords"])      # [] by default
 ```
+
+`return_first_page` defaults to `False`, so `search()` returns counts and a `searchId` without embedding records unless you explicitly opt in.
 
 ### Get specific fields (recommended for large result sets)
 
@@ -55,7 +99,6 @@ with InfobelClient() as client:
     result = client.search.search(
         country_codes="US",
         business_name="Tesla",
-        return_first_page=False,  # skip embedding records in search response
     )
     search_id = result["searchId"]
 
@@ -97,8 +140,8 @@ with InfobelClient() as client:
     # Filter by employee count
     result = client.search.search(
         country_codes="DE",
-        employees_total_from="50",
-        employees_total_to="200",
+        employees_total_from=50,
+        employees_total_to=200,
     )
 ```
 
@@ -108,16 +151,37 @@ with InfobelClient() as client:
 
 The package ships an [MCP](https://modelcontextprotocol.io/) server that exposes the Infobel API as tools for AI agents (Claude, etc.).
 
-### Configure Claude Desktop
+### Quick install for Claude Code
 
-Add this to your `~/claude.json` or in your given project within `~/path-to-your-project/.mcp.json`:
+After installing the package, register the MCP server with:
+
+```bash
+claude mcp add infobel -- infobel-mcp
+```
+
+Once the package is published on PyPI, you can also skip the prior `pip install` step and run it through `uvx`:
+
+```bash
+claude mcp add infobel -- uvx infobel-api
+```
+
+### Configure Claude Code manually
+
+As of March 18, 2026, Claude Code stores MCP servers in:
+
+- User scope: `~/.claude.json`
+- Project scope: `/path/to/project/.mcp.json`
+
+On Windows, `~/.claude.json` maps to your home directory, typically `%USERPROFILE%\\.claude.json`.
+
+Add this to either file:
 
 ```json
 {
   "mcpServers": {
     "infobel": {
-      "command": "python3",
-      "args": ["-m", "infobel_api.mcp_server"],
+      "type": "stdio",
+      "command": "infobel-mcp",
       "env": {
         "INFOBEL_USERNAME": "your-username",
         "INFOBEL_PASSWORD": "your-password"
@@ -127,24 +191,56 @@ Add this to your `~/claude.json` or in your given project within `~/path-to-your
 }
 ```
 
-If you installed into a virtual environment, use the full path to the Python binary:
+If the script is not on your `PATH`, use the full path to the installed `infobel-mcp` executable instead.
+
+### Configure Gemini CLI manually
+
+Gemini CLI stores MCP servers in:
+
+- User scope: `~/.gemini/settings.json`
+- Project scope: `/path/to/project/.gemini/settings.json`
+
+On Windows, `~/.gemini/settings.json` maps to your home directory, typically `%USERPROFILE%\\.gemini\\settings.json`.
+
+Add this to the `settings.json` file:
 
 ```json
 {
   "mcpServers": {
     "infobel": {
-      "command": "/path/to/venv/bin/python",
-      "args": ["-m", "infobel_api.mcp_server"],
+      "command": "infobel-mcp",
       "env": {
-        "INFOBEL_USERNAME": "your-username",
-        "INFOBEL_PASSWORD": "your-password"
+        "INFOBEL_USERNAME": "${INFOBEL_USERNAME}",
+        "INFOBEL_PASSWORD": "${INFOBEL_PASSWORD}"
       }
     }
   }
 }
 ```
 
-Restart Claude Desktop after saving the file. The Infobel tools will appear automatically.
+If your `settings.json` already contains other top-level keys, merge the `mcpServers` block into the existing file instead of replacing it.
+
+### Configure Codex manually
+
+Codex stores MCP servers in:
+
+- User scope: `~/.codex/config.toml`
+- Project scope: `/path/to/project/.codex/config.toml`
+
+On Windows, `~/.codex/config.toml` maps to your home directory, typically `%USERPROFILE%\\.codex\\config.toml`.
+
+Add this to `config.toml`:
+
+```toml
+[mcp_servers.infobel]
+command = "infobel-mcp"
+
+[mcp_servers.infobel.env]
+INFOBEL_USERNAME = "your-username"
+INFOBEL_PASSWORD = "your-password"
+```
+
+Codex CLI and the Codex IDE extension share the same MCP configuration.
 
 ### Available tools
 
@@ -216,3 +312,51 @@ except InfobelAPIError as e:
 The client handles rate limiting and retries automatically.
 
 ---
+
+## Publishing checklist
+
+The package is designed to be published to PyPI and used in two ways:
+
+```bash
+pip install infobel-api
+claude mcp add infobel -- infobel-mcp
+```
+
+or, after publication:
+
+```bash
+claude mcp add infobel -- uvx infobel-api
+```
+
+Before each release:
+
+1. Activate the local environment.
+   Run `source venv/bin/activate`.
+2. Build and validate distributions.
+   Run `python -m build` and `python -m twine check dist/*`.
+3. Test the wheel locally.
+   Install the built wheel in a clean environment and verify `infobel-mcp` is available.
+4. Publish to TestPyPI or PyPI through the GitHub Actions release workflow.
+
+Example console script metadata:
+
+```toml
+[project.scripts]
+infobel-mcp = "infobel_api.mcp_server:main"
+```
+
+After that, Claude/MCP setup becomes simpler:
+
+```json
+{
+  "mcpServers": {
+    "infobel": {
+      "command": "infobel-mcp",
+      "env": {
+        "INFOBEL_USERNAME": "your-username",
+        "INFOBEL_PASSWORD": "your-password"
+      }
+    }
+  }
+}
+```
