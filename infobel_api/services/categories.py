@@ -80,3 +80,39 @@ class CategoriesService(BaseService):
             f"/categories/search/{language_code}/{filter}",
             json=country_codes,
         )
+
+    def _search_keywords(
+        self,
+        keywords: list[str],
+        language_code: str,
+        country_code: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fan out over multiple keywords, deduplicate results by code."""
+        seen: set[str] = set()
+        results: list[dict[str, Any]] = []
+        for kw in keywords:
+            kw = kw.strip()
+            if not kw:
+                continue
+            for item in self.search(language_code, kw, country_code=country_code):
+                key = item.get("code") or repr(item)
+                if key not in seen:
+                    seen.add(key)
+                    results.append(item)
+        return results
+
+    def search_infobel(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
+        """Search Infobel proprietary categories by one or more keywords."""
+        return self._search_keywords(keywords, language_code)
+
+    def search_international(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
+        """Search ISIC international categories by one or more keywords."""
+        return self._search_keywords(keywords, language_code)
+
+    def search_local(self, keywords: list[str], country_code: str, language_code: str = "en") -> list[dict[str, Any]]:
+        """Search country-specific local categories by one or more keywords."""
+        return self._search_keywords(keywords, language_code, country_code=country_code)
+
+    def search_alt_international(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
+        """Search NACE (AltInternational) categories by one or more keywords."""
+        return self._search_keywords(keywords, language_code)

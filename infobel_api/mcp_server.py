@@ -393,72 +393,90 @@ def get_record_partial(country_code: str, unique_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Categories
+# Categories (search — never dump full trees)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def get_categories_infobel(language_code: str) -> str:
-    """Get Infobel category tree for a language.
+def search_categories_infobel(keywords: list[str], language_code: str = "en") -> str:
+    """Search Infobel's proprietary category hierarchy by one or more keywords.
+
+    Each keyword triggers a separate API call; results are merged and deduplicated.
+    Use multiple keywords to widen coverage — e.g. ["plumbing", "plumber", "pipes"].
+    Returns matching categories with their codes for use in search_businesses
+    `infobel_codes` field.
 
     Args:
-        language_code: Display language (e.g. "en", "fr", "de").
+        keywords: One or more search terms (e.g. ["restaurant"], ["computer", "software", "IT"]).
+        language_code: Display language for results (e.g. "en", "fr", "de").
     """
-    return _json(_get_client().categories.get_infobel(language_code))
+    return _json(_get_client().categories.search_infobel(keywords, language_code))
 
 
 @mcp.tool()
-def get_categories_international(language_code: str) -> str:
-    """Get international (ISIC) categories for a language.
+def search_categories_international(keywords: list[str], language_code: str = "en") -> str:
+    """Search ISIC international category codes (UN standard) by one or more keywords.
+
+    Each keyword triggers a separate API call; results are merged and deduplicated.
+    Returns matching codes for use in search_businesses `international_codes` field.
+    Use for cross-country industry searches using UN classification.
 
     Args:
-        language_code: Display language (e.g. "en", "fr").
+        keywords: One or more search terms (e.g. ["manufacturing"], ["retail", "wholesale", "trade"]).
+        language_code: Display language for results (e.g. "en", "fr").
     """
-    return _json(_get_client().categories.get_international(language_code))
+    return _json(_get_client().categories.search_international(keywords, language_code))
 
 
 @mcp.tool()
-def get_categories_local(country_code: str, language_code: str) -> str:
-    """Get local/national categories for a country and language.
+def search_categories_local(keywords: list[str], country_code: str, language_code: str = "en") -> str:
+    """Search country-specific category codes by one or more keywords.
+
+    Each keyword triggers a separate API call; results are merged and deduplicated.
+    Returns matching local codes (e.g. SIC for US, NAF for France, WZ for Germany)
+    for use in search_businesses `local_codes` field.
 
     Args:
-        country_code: ISO country code (e.g. "GB", "FR").
-        language_code: Display language (e.g. "en").
+        keywords: One or more search terms (e.g. ["plomberie"], ["bakery", "boulangerie", "pastry"]).
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "FR", "DE", "US").
+        language_code: Display language for results (e.g. "en", "fr").
     """
-    return _json(_get_client().categories.get_local(country_code, language_code))
+    return _json(_get_client().categories.search_local(keywords, country_code, language_code))
+
+
+@mcp.tool()
+def search_categories_alt_international(keywords: list[str], language_code: str = "en") -> str:
+    """Search NACE codes (European standard, AltInternational) by one or more keywords.
+
+    Each keyword triggers a separate API call; results are merged and deduplicated.
+    Returns matching NACE codes for use in search_businesses `alt_international_codes`
+    field. Use this for EU industry classification queries.
+
+    Args:
+        keywords: One or more search terms (e.g. ["computer programming"], ["software", "IT", "development"]).
+        language_code: Display language for results (e.g. "en", "fr", "de").
+    """
+    return _json(_get_client().categories.search_alt_international(keywords, language_code))
 
 
 # ---------------------------------------------------------------------------
-# Locations
+# Locations (search — never dump full lists)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def get_locations_cities(country_code: str) -> str:
-    """Get all cities for a country.
+def search_locations(keywords: list[str], country_code: str, language_code: str = "en") -> str:
+    """Search cities, regions, and provinces within a country by one or more keywords.
+
+    Each keyword triggers a separate API call; results are merged and deduplicated.
+    Returns matching location codes for use in search_businesses filters
+    (city_codes, region_codes, province_codes). Always use this instead of
+    fetching full location lists.
 
     Args:
-        country_code: ISO 3166-1 alpha-2 country code (e.g. "GB").
+        keywords: One or more search terms (e.g. ["Munich"], ["Bavaria", "Bayern", "Munich"]).
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "DE", "GB").
+        language_code: Display language for results (e.g. "en", "de", "fr").
     """
-    return _json(_get_client().locations.get_cities(country_code))
-
-
-@mcp.tool()
-def get_locations_regions(country_code: str) -> str:
-    """Get all regions for a country.
-
-    Args:
-        country_code: ISO 3166-1 alpha-2 country code (e.g. "GB").
-    """
-    return _json(_get_client().locations.get_regions(country_code))
-
-
-@mcp.tool()
-def get_locations_provinces(country_code: str) -> str:
-    """Get all provinces for a country.
-
-    Args:
-        country_code: ISO 3166-1 alpha-2 country code (e.g. "GB").
-    """
-    return _json(_get_client().locations.get_provinces(country_code))
+    return _json(_get_client().locations.search_keywords(keywords, country_code, language_code=language_code))
 
 
 # ---------------------------------------------------------------------------

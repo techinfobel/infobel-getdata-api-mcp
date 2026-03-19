@@ -49,6 +49,26 @@ class LocationsService(BaseService):
             params=params or None,
         )
 
+    def search_keywords(
+        self,
+        keywords: list[str],
+        country_code: str,
+        language_code: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fan out over multiple keywords, deduplicate results by code."""
+        seen: set[str] = set()
+        results: list[dict[str, Any]] = []
+        for kw in keywords:
+            kw = kw.strip()
+            if not kw:
+                continue
+            for item in self.search(country_code, kw, language_code=language_code):
+                key = item.get("code") or repr(item)
+                if key not in seen:
+                    seen.add(key)
+                    results.append(item)
+        return results
+
     def search(
         self,
         country_code: str,
