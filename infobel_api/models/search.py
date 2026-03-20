@@ -19,6 +19,7 @@ class SearchInput(BaseModel):
 
     # Core settings
     data_type: str | None = Field(default="Business", alias="DataType")
+    can_match_any_business_filter: bool | None = Field(default=None, alias="CanMatchAnyBusinessFilter")
     page_size: int | None = Field(default=20, alias="PageSize")
     display_language: str | None = Field(default=None, alias="DisplayLanguage")
     international_phone_format: bool | None = Field(default=None, alias="InternationalPhoneFormat")
@@ -123,15 +124,15 @@ class SearchInput(BaseModel):
     # Business data
     year_started_from: str | None = Field(default=None, alias="YearStartedFrom")
     year_started_to: str | None = Field(default=None, alias="YearStartedTo")
-    employees_total_from: int | None = Field(default=None, alias="EmployeesTotalFrom")
-    employees_total_to: int | None = Field(default=None, alias="EmployeesTotalTo")
-    sales_volume_from: int | None = Field(default=None, alias="SalesVolumeFrom")
-    sales_volume_to: int | None = Field(default=None, alias="SalesVolumeTo")
+    employees_total_from: str | None = Field(default=None, alias="EmployeesTotalFrom")
+    employees_total_to: str | None = Field(default=None, alias="EmployeesTotalTo")
+    sales_volume_from: str | None = Field(default=None, alias="SalesVolumeFrom")
+    sales_volume_to: str | None = Field(default=None, alias="SalesVolumeTo")
     sales_volume_currency: str | None = Field(default=None, alias="SalesVolumeCurrency")
     sales_volum_reliability_codes: list[int] | None = Field(default=None, alias="SalesVolumReliabilityCodes")
     sales_volum_reliability_codes_exclusive: list[int] | None = Field(default=None, alias="SalesVolumReliabilityCodesExclusive")
-    family_members_from: int | None = Field(default=None, alias="FamilyMembersFrom")
-    family_members_to: int | None = Field(default=None, alias="FamilyMembersTo")
+    family_members_from: str | None = Field(default=None, alias="FamilyMembersFrom")
+    family_members_to: str | None = Field(default=None, alias="FamilyMembersTo")
 
     # Business attributes
     is_published: bool | None = Field(default=None, alias="IsPublished")
