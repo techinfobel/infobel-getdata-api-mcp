@@ -75,8 +75,8 @@ def search_businesses(
     categories_keywords: list[str] | None = None,
     has_phone: bool | None = None,
     has_email: bool | None = None,
-    has_website: str | None = None,
-    has_national_id: str | None = None,
+    has_website: bool | None = None,
+    has_national_id: bool | None = None,
     has_coordinates: bool | None = None,
     has_linked_in: bool | None = None,
     year_started_from: str | None = None,
@@ -199,8 +199,8 @@ def search_businesses(
         categories_keywords: Free-text category keywords.
         has_phone: Filter for businesses with phone numbers.
         has_email: Filter for businesses with email addresses.
-        has_website: Filter for businesses with websites ("true"/"false").
-        has_national_id: Filter for businesses with national ID ("true"/"false").
+        has_website: Filter for businesses with websites.
+        has_national_id: Filter for businesses with national ID.
         has_coordinates: Filter for businesses with GPS coordinates.
         has_linked_in: Filter for businesses with LinkedIn profiles.
         year_started_from: Minimum year started (e.g. "2000").
