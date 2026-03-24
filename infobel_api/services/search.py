@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, get_args, get_origin
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from .._base_service import BaseService
 from ..models.search import SearchInput, SearchResponse
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -99,14 +102,36 @@ class SearchService(BaseService):
         fields: list[str],
         *,
         language_code: str | None = None,
-    ) -> dict[str, Any]:
-        """POST /api/search/{id}/records/{page} — select specific fields."""
+        flatten: bool = False,
+        flatten_metadata: dict[str, Any] | None = None,
+    ) -> "dict[str, Any] | pd.DataFrame":
+        """POST /api/search/{id}/records/{page} — select specific fields.
+
+        Args:
+            search_id: ID returned by a previous search call.
+            page: 1-based page number.
+            fields: List of camelCase field names to include in each record.
+            language_code: Optional language code for translated labels.
+            flatten: When True, return a ``pandas.DataFrame`` with the full
+                482-column flat schema instead of the raw API response dict.
+            flatten_metadata: Optional metadata injected into the flattened
+                output (e.g. ``{"BuildDate": "2026-03-24", "TotalRecords": 500}``).
+                Only used when ``flatten=True``.
+
+        Returns:
+            Raw API response dict when ``flatten=False`` (default), or a
+            ``pandas.DataFrame`` when ``flatten=True``.
+        """
         params = {}
         if language_code is not None:
             params["languageCode"] = language_code
-        return self._http.post(
+        response = self._http.post(
             f"/search/{search_id}/records/{page}",
             json=fields,
             params=params or None,
         )
+        if not flatten:
+            return response
+        from ..flatten import convert_records
+        return convert_records(response.get("records", []), flatten_metadata)
 
