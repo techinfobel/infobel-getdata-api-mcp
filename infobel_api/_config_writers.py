@@ -71,7 +71,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
 # Public writers
 # ---------------------------------------------------------------------------
 
-def write_claude(path: Path, username: str, password: str) -> None:
+def write_claude(path: Path, username: str, password: str, python_executable: str) -> None:
     """Write/merge the infobel block into a Claude JSON config file.
 
     Global target: ~/.claude.json
@@ -83,7 +83,8 @@ def write_claude(path: Path, username: str, password: str) -> None:
         "mcpServers": {
             "infobel": {
                 "type": "stdio",
-                "command": "infobel-mcp",
+                "command": python_executable,
+                "args": ["-m", "infobel_api.mcp_server"],
                 "env": {
                     "INFOBEL_USERNAME": username,
                     "INFOBEL_PASSWORD": password,
@@ -95,7 +96,7 @@ def write_claude(path: Path, username: str, password: str) -> None:
     _write_json(path, merged)
 
 
-def write_gemini(path: Path, username: str, password: str) -> None:
+def write_gemini(path: Path, username: str, password: str, python_executable: str) -> None:
     """Write/merge the infobel block into a Gemini JSON settings file.
 
     Global target: ~/.gemini/settings.json
@@ -106,7 +107,8 @@ def write_gemini(path: Path, username: str, password: str) -> None:
     block: dict[str, Any] = {
         "mcpServers": {
             "infobel": {
-                "command": "infobel-mcp",
+                "command": python_executable,
+                "args": ["-m", "infobel_api.mcp_server"],
                 "env": {
                     "INFOBEL_USERNAME": username,
                     "INFOBEL_PASSWORD": password,
@@ -118,7 +120,7 @@ def write_gemini(path: Path, username: str, password: str) -> None:
     _write_json(path, merged)
 
 
-def write_codex(path: Path, username: str, password: str) -> None:
+def write_codex(path: Path, username: str, password: str, python_executable: str) -> None:
     """Write/merge the infobel block into a Codex TOML config file.
 
     Global target: ~/.codex/config.toml
@@ -129,7 +131,8 @@ def write_codex(path: Path, username: str, password: str) -> None:
     block: dict[str, Any] = {
         "mcp_servers": {
             "infobel": {
-                "command": "infobel-mcp",
+                "command": python_executable,
+                "args": ["-m", "infobel_api.mcp_server"],
                 "env": {
                     "INFOBEL_USERNAME": username,
                     "INFOBEL_PASSWORD": password,

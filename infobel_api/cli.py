@@ -49,6 +49,16 @@ def _get_credentials(
     return resolved_username, resolved_password
 
 
+def _detect_python_executable() -> str:
+    """Return the absolute path to the Python interpreter running this process.
+
+    This is always the correct interpreter to use in MCP configs — it is the
+    Python that has infobel_api installed, regardless of whether the user is
+    in a venv, conda environment, pyenv, or system Python on any platform.
+    """
+    return sys.executable
+
+
 def _cmd_add(args: argparse.Namespace) -> None:
     from infobel_api._config_writers import write_claude, write_codex, write_gemini
 
@@ -60,12 +70,15 @@ def _cmd_add(args: argparse.Namespace) -> None:
     use_env = args.use_env_vars
     username, password = _get_credentials(args.username, args.password, use_env)
 
+    python_executable = _detect_python_executable()
+    print(f"Using Python: {python_executable}")
+
     if agent == "claude":
-        write_claude(target, username, password)
+        write_claude(target, username, password, python_executable)
     elif agent == "codex":
-        write_codex(target, username, password)
+        write_codex(target, username, password, python_executable)
     elif agent == "gemini":
-        write_gemini(target, username, password)
+        write_gemini(target, username, password, python_executable)
     else:
         print(f"Unknown agent: {agent}", file=sys.stderr)
         sys.exit(1)
