@@ -2,14 +2,6 @@ name: Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      repository:
-        description: Target package index
-        required: true
-        type: choice
-        options:
-          - testpypi
-          - pypi
   release:
     types:
       - published
@@ -47,35 +39,9 @@ jobs:
           name: dist
           path: dist/*
 
-  publish-testpypi:
-    needs: build
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.repository == 'testpypi'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/infobel-api-mcp
-
-    steps:
-      - name: Download distributions
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
   publish-pypi:
     needs: build
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.repository == 'pypi')
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
 
     environment:
       name: pypi
@@ -90,3 +56,5 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
