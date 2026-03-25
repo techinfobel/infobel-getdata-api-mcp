@@ -85,6 +85,7 @@ class CategoriesService(BaseService):
         self,
         keywords: list[str],
         language_code: str,
+        category_type: str,
         country_code: str | None = None,
     ) -> list[dict[str, Any]]:
         """Fan out over multiple keywords, deduplicate results by code."""
@@ -94,8 +95,10 @@ class CategoriesService(BaseService):
             kw = kw.strip()
             if not kw:
                 continue
-            for item in self.search(language_code, kw, country_code=country_code):
-                key = item.get("code") or repr(item)
+            response = self.search(language_code, kw, country_code=country_code)
+            items = response.get(category_type, []) if isinstance(response, dict) else response
+            for item in items:
+                key = (item.get("code") if isinstance(item, dict) else item) or repr(item)
                 if key not in seen:
                     seen.add(key)
                     results.append(item)
@@ -103,16 +106,16 @@ class CategoriesService(BaseService):
 
     def search_infobel(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
         """Search Infobel proprietary categories by one or more keywords."""
-        return self._search_keywords(keywords, language_code)
+        return self._search_keywords(keywords, language_code, "infobel")
 
     def search_international(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
         """Search ISIC international categories by one or more keywords."""
-        return self._search_keywords(keywords, language_code)
+        return self._search_keywords(keywords, language_code, "international")
 
     def search_local(self, keywords: list[str], country_code: str, language_code: str = "en") -> list[dict[str, Any]]:
         """Search country-specific local categories by one or more keywords."""
-        return self._search_keywords(keywords, language_code, country_code=country_code)
+        return self._search_keywords(keywords, language_code, "local", country_code=country_code)
 
     def search_alt_international(self, keywords: list[str], language_code: str = "en") -> list[dict[str, Any]]:
         """Search NACE (AltInternational) categories by one or more keywords."""
-        return self._search_keywords(keywords, language_code)
+        return self._search_keywords(keywords, language_code, "altInternational")

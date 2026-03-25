@@ -63,7 +63,7 @@ class LocationsService(BaseService):
             if not kw:
                 continue
             for item in self.search(country_code, kw, language_code=language_code):
-                key = item.get("code") or repr(item)
+                key = (item.get("code") if isinstance(item, dict) else item) or repr(item)
                 if key not in seen:
                     seen.add(key)
                     results.append(item)
