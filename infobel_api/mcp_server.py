@@ -507,8 +507,58 @@ def search_categories_alt_international(keywords: list[str], language_code: str 
 
 
 # ---------------------------------------------------------------------------
-# Locations (search — never dump full lists)
+# Locations — hierarchy: regions → provinces → cities
 # ---------------------------------------------------------------------------
+
+@mcp.tool()
+def get_regions(country_code: str, language_code: str = "en") -> str:
+    """List all regions for a country. Use the returned codes as region_code in get_provinces.
+
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "GB", "DE").
+        language_code: Display language for results (e.g. "en", "de", "fr").
+    """
+    try:
+        return _json(_get_client().locations.get_regions(country_code, language_code=language_code))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_provinces(country_code: str, region_code: str | None = None, language_code: str = "en") -> str:
+    """List provinces for a country, optionally filtered by region code.
+
+    Use the returned codes as province_code in get_cities or search_businesses.
+
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "GB", "DE").
+        region_code: Optional region code from get_regions to narrow results.
+        language_code: Display language for results (e.g. "en", "de", "fr").
+    """
+    try:
+        return _json(_get_client().locations.get_provinces(country_code, region_code=region_code, language_code=language_code))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_cities(country_code: str, keyword: str, province_code: str | None = None, language_code: str = "en") -> str:
+    """Search cities within a country by keyword.
+
+    Use the returned codes as city_codes in search_businesses filters.
+    Always provide a specific city name or partial name — never call without a keyword.
+
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "US", "GB").
+        keyword: City name or partial name to search for (e.g. "New York", "Munich").
+        province_code: Optional province code to narrow results to a specific state/region.
+        language_code: Display language for results (e.g. "en", "de", "fr").
+    """
+    try:
+        return _json(_get_client().locations.get_cities(country_code, keyword, province_code=province_code, language_code=language_code))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
 
 @mcp.tool()
 def search_locations(keywords: list[str], country_code: str, language_code: str = "en") -> str:

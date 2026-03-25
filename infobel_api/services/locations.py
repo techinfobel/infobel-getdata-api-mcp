@@ -9,29 +9,49 @@ from .._base_service import BaseService
 
 class LocationsService(BaseService):
 
-    def get_cities(self, country_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/cities/{country}"""
-        return self._http.get(f"/locations/cities/{country_code}")
+    def get_regions(self, country_code: str, *, language_code: str | None = None) -> list[dict[str, Any]]:
+        """GET /api/locations/{countryCode}/regions?languageCode={lang}"""
+        params = {}
+        if language_code is not None:
+            params["languageCode"] = language_code
+        return self._http.get(f"/locations/{country_code}/regions", params=params or None)
 
-    def get_cities_by_region(self, country_code: str, region_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/cities/{country}/{region}"""
-        return self._http.get(f"/locations/cities/{country_code}/{region_code}")
+    def get_provinces(
+        self,
+        country_code: str,
+        *,
+        region_code: str | None = None,
+        language_code: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """GET /api/locations/{countryCode}/provinces?regionCode={regionCode}&languageCode={lang}"""
+        params = {}
+        if region_code is not None:
+            params["regionCode"] = region_code
+        if language_code is not None:
+            params["languageCode"] = language_code
+        return self._http.get(f"/locations/{country_code}/provinces", params=params or None)
 
-    def get_provinces(self, country_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/provinces/{country}"""
-        return self._http.get(f"/locations/provinces/{country_code}")
+    def get_cities(
+        self,
+        country_code: str,
+        keyword: str,
+        *,
+        province_code: str | None = None,
+        language_code: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Search cities within a country by keyword, optionally narrowed by province."""
+        results = self.search_keywords([keyword], country_code, language_code=language_code)
+        cities = [r for r in results if r.get("type") == "City"]
+        if province_code:
+            cities = [c for c in cities if c.get("parentCode") == province_code]
+        return cities
 
-    def get_provinces_by_region(self, country_code: str, region_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/provinces/{country}/{region}"""
-        return self._http.get(f"/locations/provinces/{country_code}/{region_code}")
-
-    def get_regions(self, country_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/regions/{country}"""
-        return self._http.get(f"/locations/regions/{country_code}")
-
-    def get_post_codes(self, country_code: str) -> list[dict[str, Any]]:
-        """GET /api/locations/postcodes/{country}"""
-        return self._http.get(f"/locations/postcodes/{country_code}")
+    def get_post_codes(self, country_code: str, *, language_code: str | None = None) -> list[dict[str, Any]]:
+        """GET /api/locations/{countryCode}/postcodes?languageCode={lang}"""
+        params = {}
+        if language_code is not None:
+            params["languageCode"] = language_code
+        return self._http.get(f"/locations/{country_code}/postcodes", params=params or None)
 
     def get_lineage(
         self,
@@ -62,7 +82,15 @@ class LocationsService(BaseService):
             kw = kw.strip()
             if not kw:
                 continue
-            for item in self.search(country_code, kw, language_code=language_code):
+            raw = self.search(country_code, kw, language_code=language_code)
+            items: list[Any] = []
+            if isinstance(raw, dict):
+                for v in raw.values():
+                    if isinstance(v, list):
+                        items.extend(v)
+            else:
+                items = raw
+            for item in items:
                 key = (item.get("code") if isinstance(item, dict) else item) or repr(item)
                 if key not in seen:
                     seen.add(key)
@@ -75,7 +103,7 @@ class LocationsService(BaseService):
         filter: str,
         *,
         language_code: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """GET /api/locations/{cc}/search/{filter}?languageCode={lang}"""
         params = {}
         if language_code is not None:
