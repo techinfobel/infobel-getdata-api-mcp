@@ -67,36 +67,93 @@ def _ensure_unique_id(fields: list[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def search_businesses(
+def search_businesses(  # noqa: PLR0913
     country_codes: list[str],
     record_fields: list[str],
+    # Identity
     business_name: list[str] | None = None,
+    business_name_exclusive: list[str] | None = None,
     national_id: list[str] | None = None,
+    national_id_exclusive: list[str] | None = None,
     unique_ids: list[str] | None = None,
+    unique_ids_exclusive: list[str] | None = None,
+    # Free-text
+    who: str | None = None,
+    where: str | None = None,
+    # Location - cities
     city_names: list[str] | None = None,
     city_codes: list[str] | None = None,
+    city_codes_exclusive: list[str] | None = None,
+    # Location - provinces
     province_names: list[str] | None = None,
     province_codes: list[str] | None = None,
+    province_codes_exclusive: list[str] | None = None,
+    # Location - regions
     region_names: list[str] | None = None,
     region_codes: list[str] | None = None,
+    region_codes_exclusive: list[str] | None = None,
+    # Location - postal
     post_codes: list[str] | None = None,
+    post_codes_exclusive: list[str] | None = None,
+    # Location - address
     street_address: str | None = None,
     house_number: str | None = None,
+    # Location - coordinates (inclusive)
+    coordinate_latitude: float | None = None,
+    coordinate_longitude: float | None = None,
+    coordinate_distance: int | None = None,
+    # Location - coordinates (exclusive)
+    coordinate_latitude_exclusive: float | None = None,
+    coordinate_longitude_exclusive: float | None = None,
+    coordinate_distance_exclusive: int | None = None,
+    # Contact values
     phone_number: list[str] | None = None,
+    phone_number_exclusive: list[str] | None = None,
     email: list[str] | None = None,
+    email_exclusive: list[str] | None = None,
     website: list[str] | None = None,
+    website_exclusive: list[str] | None = None,
+    website_ip_address: str | None = None,
+    # Categories
     international_codes: list[str] | None = None,
+    international_codes_exclusive: list[str] | None = None,
     infobel_codes: list[str] | None = None,
+    infobel_codes_exclusive: list[str] | None = None,
     local_codes: list[str] | None = None,
+    local_codes_exclusive: list[str] | None = None,
     alt_international_codes: list[str] | None = None,
+    alt_international_codes_exclusive: list[str] | None = None,
     categories_keywords: list[str] | None = None,
+    restrict_on_main_category: bool | None = None,
+    # Presence filters
+    has_address: bool | None = None,
     has_phone: bool | None = None,
+    has_fax: bool | None = None,
+    has_mobile: bool | None = None,
     has_email: bool | None = None,
-    has_website: bool | None = None,
-    has_national_id: bool | None = None,
+    has_website: int | None = None,
+    has_national_id: int | None = None,
+    has_web_contact: bool | None = None,
+    has_contact: bool | None = None,
     has_coordinates: bool | None = None,
     has_linked_in: bool | None = None,
-    can_match_any_business_filter: bool | None = None,
+    has_logo: bool | None = None,
+    has_admin: bool | None = None,
+    has_marketability: bool | None = None,
+    has_building_geometry: bool | None = None,
+    has_shop_tool: bool | None = None,
+    has_payment: bool | None = None,
+    has_digital_marketing: bool | None = None,
+    has_e_shop: bool | None = None,
+    # Deduplication filters
+    has_phone_deduplicated: bool | None = None,
+    has_email_deduplicated: bool | None = None,
+    has_website_deduplicated: bool | None = None,
+    has_web_domain_deduplicated: bool | None = None,
+    has_national_id_deduplicated: bool | None = None,
+    has_mobile_deduplicated: bool | None = None,
+    has_contact_deduplicated: bool | None = None,
+    # Business data
     year_started_from: str | None = None,
     year_started_to: str | None = None,
     employees_total_from: int | None = None,
@@ -104,35 +161,60 @@ def search_businesses(
     sales_volume_from: int | None = None,
     sales_volume_to: int | None = None,
     sales_volume_currency: str | None = None,
+    sales_volum_reliability_codes: list[int] | None = None,
+    sales_volum_reliability_codes_exclusive: list[int] | None = None,
+    family_members_from: str | None = None,
+    family_members_to: str | None = None,
+    # Business attributes
+    is_published: bool | None = None,
+    is_vat: bool | None = None,
+    filter_on_dncm: bool | None = None,
+    publishing_strength_from: str | None = None,
+    publishing_strength_to: str | None = None,
+    linked_in_followers_from: str | None = None,
+    linked_in_followers_to: str | None = None,
+    # Status & geo
     status_codes: list[str] | None = None,
-    legal_status_codes: list[str] | None = None,
-    ceo_name: str | None = None,
+    status_codes_exclusive: list[str] | None = None,
+    geo_levels: list[int] | None = None,
+    geo_levels_exclusive: list[int] | None = None,
+    # Corporate structure
     parent_unique_id: list[str] | None = None,
+    parent_unique_id_exclusive: list[str] | None = None,
     global_ultimate_unique_id: list[str] | None = None,
+    global_ultimate_unique_id_exclusive: list[str] | None = None,
+    global_ultimate_country_codes: list[str] | None = None,
+    global_ultimate_country_codes_exclusive: list[str] | None = None,
     domestic_ultimate_unique_id: list[str] | None = None,
+    domestic_ultimate_unique_id_exclusive: list[str] | None = None,
+    # Executive
+    ceo_name: str | None = None,
+    ceo_title: str | None = None,
+    executive_tags: list[str] | None = None,
+    # Legal & identification
+    legal_status_codes: list[str] | None = None,
+    legal_status_codes_exclusive: list[str] | None = None,
+    national_identification_type_codes: list[str] | None = None,
+    national_identification_type_codes_exclusive: list[str] | None = None,
+    import_export_agent_codes: list[str] | None = None,
+    import_export_agent_codes_exclusive: list[str] | None = None,
+    # Digital & technographic
+    technographical_tags: list[str] | None = None,
+    website_status_flags: list[int] | None = None,
+    website_status_flags_exclusive: list[int] | None = None,
+    social_links: list[str] | None = None,
+    social_links_exclusive: list[str] | None = None,
+    # Language
+    languages: list[str] | None = None,
+    languages_exclusive: list[str] | None = None,
+    # Search settings
+    can_match_any_business_filter: bool | None = None,
+    try_any_location_match: bool | None = None,
+    international_phone_format: bool | None = None,
+    validate_filters: bool | None = None,
     display_language: str | None = None,
     page_size: int | None = None,
     sorting_order: list[dict] | None = None,
-    coordinate_latitude: float | None = None,
-    coordinate_longitude: float | None = None,
-    coordinate_distance: int | None = None,
-    technographical_tags: list[str] | None = None,
-    executive_tags: list[str] | None = None,
-    social_links: list[str] | None = None,
-    website_status_flags: list[int] | None = None,
-    import_export_agent_codes: list[str] | None = None,
-    is_published: bool | None = None,
-    is_vat: bool | None = None,
-    has_admin: bool | None = None,
-    has_marketability: bool | None = None,
-    has_building_geometry: bool | None = None,
-    has_logo: bool | None = None,
-    has_shop_tool: bool | None = None,
-    has_payment: bool | None = None,
-    has_digital_marketing: bool | None = None,
-    has_e_shop: bool | None = None,
-    linked_in_followers_from: str | None = None,
-    linked_in_followers_to: str | None = None,
     data_type: str | None = None,
 ) -> str:
     """Search the Infobel worldwide business database.
@@ -196,103 +278,207 @@ def search_businesses(
         record_fields: Fields to return per record. Empty list = counts only.
                        uniqueID is always included automatically.
         business_name: Business names to search for (e.g. ["Acme Corp"]).
-        national_id: National registration numbers (e.g. company house numbers).
+        business_name_exclusive: Business names to exclude.
+        national_id: National registration numbers to include.
+        national_id_exclusive: National registration numbers to exclude.
         unique_ids: Infobel unique IDs to look up directly.
+        unique_ids_exclusive: Infobel unique IDs to exclude.
+        who: Free-text search across business name, category, or phone.
+        where: Free-text location search (city, postal code).
         city_names: Filter by city names (e.g. ["London", "Manchester"]).
         city_codes: Filter by city codes.
+        city_codes_exclusive: City codes to exclude.
         province_names: Filter by province/state names.
         province_codes: Filter by province codes.
+        province_codes_exclusive: Province codes to exclude.
         region_names: Filter by region names.
         region_codes: Filter by region codes.
+        region_codes_exclusive: Region codes to exclude.
         post_codes: Filter by postal/zip codes.
+        post_codes_exclusive: Postal codes to exclude.
         street_address: Street address filter.
         house_number: House number filter.
-        phone_number: Phone numbers to search.
-        email: Email addresses to search.
-        website: Website URLs to search.
-        international_codes: ISIC international category codes.
-        infobel_codes: Infobel proprietary category codes.
-        local_codes: Local/national category codes (e.g. SIC, NAF).
-        alt_international_codes: NACE category codes.
+        coordinate_latitude: Latitude for inclusive geo-search.
+        coordinate_longitude: Longitude for inclusive geo-search.
+        coordinate_distance: Radius in meters for inclusive geo-search (default 100).
+        coordinate_latitude_exclusive: Latitude for exclusive geo-search.
+        coordinate_longitude_exclusive: Longitude for exclusive geo-search.
+        coordinate_distance_exclusive: Radius in meters for exclusive geo-search.
+        phone_number: Phone numbers to include.
+        phone_number_exclusive: Phone numbers to exclude.
+        email: Email addresses to include.
+        email_exclusive: Email addresses to exclude.
+        website: Website URLs to include.
+        website_exclusive: Website URLs to exclude.
+        website_ip_address: Filter by website IP address.
+        international_codes: ISIC international category codes to include.
+        international_codes_exclusive: ISIC codes to exclude.
+        infobel_codes: Infobel proprietary category codes to include.
+        infobel_codes_exclusive: Infobel codes to exclude.
+        local_codes: Local/national category codes to include (e.g. SIC, NAF).
+        local_codes_exclusive: Local codes to exclude.
+        alt_international_codes: NACE category codes to include.
+        alt_international_codes_exclusive: NACE codes to exclude.
         categories_keywords: Free-text category keywords.
+        restrict_on_main_category: When True, match only the primary category.
+        has_address: Filter for businesses with an address.
         has_phone: Filter for businesses with phone numbers.
+        has_fax: Filter for businesses with fax numbers.
+        has_mobile: Filter for businesses with mobile numbers.
         has_email: Filter for businesses with email addresses.
-        has_website: Filter for businesses with websites.
-        has_national_id: Filter for businesses with national ID.
+        has_website: PresenceType for website: 0=Ignore, 1=Has, 2=HasNot.
+        has_national_id: PresenceType for national ID: 0=Ignore, 1=Has, 2=HasNot.
+        has_web_contact: Filter for businesses with website or email.
+        has_contact: Filter for businesses with phone or mobile.
         has_coordinates: Filter for businesses with GPS coordinates.
         has_linked_in: Filter for businesses with LinkedIn profiles.
-        can_match_any_business_filter: When True, records matching ANY filter are
-                                       returned (OR logic). Default is AND logic.
+        has_logo: Filter for businesses with logos.
+        has_admin: Filter for businesses with admin data.
+        has_marketability: Filter for marketable records.
+        has_building_geometry: Filter for records with building geometry.
+        has_shop_tool: Filter for businesses with shop tools.
+        has_payment: Filter for businesses with payment capabilities.
+        has_digital_marketing: Filter for businesses with digital marketing.
+        has_e_shop: Filter for businesses with e-shops.
+        has_phone_deduplicated: Deduplicate on phone (requires has_phone).
+        has_email_deduplicated: Deduplicate on email (requires has_email).
+        has_website_deduplicated: Deduplicate on website (requires has_website).
+        has_web_domain_deduplicated: Deduplicate on domain (requires has_website).
+        has_national_id_deduplicated: Deduplicate on national ID.
+        has_mobile_deduplicated: Deduplicate on mobile.
+        has_contact_deduplicated: Deduplicate on contact.
         year_started_from: Minimum year started (e.g. "2000").
         year_started_to: Maximum year started (e.g. "2020").
         employees_total_from: Minimum employee count.
         employees_total_to: Maximum employee count.
         sales_volume_from: Minimum sales volume.
         sales_volume_to: Maximum sales volume.
-        sales_volume_currency: Currency for sales volume filter (e.g. "EUR", "USD").
-        status_codes: Business status codes (e.g. ["Active"]).
-        legal_status_codes: Legal form codes.
-        ceo_name: CEO/executive name search.
-        parent_unique_id: Filter by parent company unique ID.
-        global_ultimate_unique_id: Filter by global ultimate owner unique ID.
-        domestic_ultimate_unique_id: Filter by domestic ultimate owner unique ID.
-        display_language: Language for result display (e.g. "en", "fr").
-        page_size: Results per page (default 20, max varies by plan).
-        sorting_order: Sorting options.
-        coordinate_latitude: Latitude for geo-search.
-        coordinate_longitude: Longitude for geo-search.
-        coordinate_distance: Radius in meters for geo-search (default 100).
-        technographical_tags: Filter by web technologies used.
-        executive_tags: Filter by executive characteristics.
-        social_links: Filter by social media presence.
-        website_status_flags: Filter by website status.
-        import_export_agent_codes: Filter by import/export activity.
-        is_published: Filter by published status.
-        is_vat: Filter by VAT registration.
-        has_admin: Filter for businesses with admin data.
-        has_marketability: Filter for marketable records.
-        has_building_geometry: Filter for records with building geometry.
-        has_logo: Filter for businesses with logos.
-        has_shop_tool: Filter for businesses with shop tools.
-        has_payment: Filter for businesses with payment capabilities.
-        has_digital_marketing: Filter for businesses with digital marketing.
-        has_e_shop: Filter for businesses with e-shops.
+        sales_volume_currency: Currency for sales volume (use get_currencies for codes).
+        sales_volum_reliability_codes: Sales reliability codes to include.
+        sales_volum_reliability_codes_exclusive: Sales reliability codes to exclude.
+        family_members_from: Minimum family member count.
+        family_members_to: Maximum family member count.
+        is_published: Filter by published status on infobel.com.
+        is_vat: Filter where NationalID is also a VAT number.
+        filter_on_dncm: Exclude DoNotCallMe records (Belgium only).
+        publishing_strength_from: Minimum publishing strength (0+).
+        publishing_strength_to: Maximum publishing strength (max 100).
         linked_in_followers_from: Minimum LinkedIn followers.
         linked_in_followers_to: Maximum LinkedIn followers.
-        data_type: Data type to search (default "Business").
+        status_codes: Business hierarchy/status codes to include (use get_status_codes).
+        status_codes_exclusive: Business status codes to exclude.
+        geo_levels: Geographic precision levels to include (use get_geo_levels).
+        geo_levels_exclusive: Geographic precision levels to exclude.
+        parent_unique_id: Filter by parent company unique ID.
+        parent_unique_id_exclusive: Parent unique IDs to exclude.
+        global_ultimate_unique_id: Filter by global ultimate owner unique ID.
+        global_ultimate_unique_id_exclusive: Global ultimate unique IDs to exclude.
+        global_ultimate_country_codes: Filter by global ultimate country codes.
+        global_ultimate_country_codes_exclusive: Global ultimate country codes to exclude.
+        domestic_ultimate_unique_id: Filter by domestic ultimate owner unique ID.
+        domestic_ultimate_unique_id_exclusive: Domestic ultimate unique IDs to exclude.
+        ceo_name: CEO/executive name search.
+        ceo_title: CEO/executive title search.
+        executive_tags: Filter by executive tags (use get_executive_tags for values).
+        legal_status_codes: Legal form codes to include (use get_legal_status_codes).
+        legal_status_codes_exclusive: Legal form codes to exclude.
+        national_identification_type_codes: National ID type codes to include.
+        national_identification_type_codes_exclusive: National ID type codes to exclude.
+        import_export_agent_codes: Import/export agent codes to include.
+        import_export_agent_codes_exclusive: Import/export agent codes to exclude.
+        technographical_tags: Filter by web technologies (use get_technographical_tags).
+        website_status_flags: Website status flags to include (use get_website_status_flags).
+        website_status_flags_exclusive: Website status flags to exclude.
+        social_links: Social media platforms to include (use get_social_links for codes).
+        social_links_exclusive: Social media platforms to exclude.
+        languages: ISO 639-3 language codes to include.
+        languages_exclusive: ISO 639-3 language codes to exclude.
+        can_match_any_business_filter: When True, OR logic instead of AND.
+        try_any_location_match: Use partial location matches if exact not found.
+        international_phone_format: Return phone numbers with +xxx prefix.
+        validate_filters: Validate provided filters before searching.
+        display_language: Language for result display (e.g. "en", "fr").
+        page_size: Results per page (default 20).
+        sorting_order: Sorting options (use get_sorting_orders for values).
+        data_type: Data type: "Business" (default), "YellowPages", or "WhitePages".
     """
     try:
         kwargs: dict[str, Any] = {"country_codes": country_codes, "return_first_page": False}
 
         # Map all non-None params into SearchInput kwargs
         _locals = {
+            # Identity
             "business_name": business_name,
+            "business_name_exclusive": business_name_exclusive,
             "national_id": national_id,
+            "national_id_exclusive": national_id_exclusive,
             "unique_ids": unique_ids,
+            "unique_ids_exclusive": unique_ids_exclusive,
+            # Free-text
+            "who": who,
+            "where": where,
+            # Location
             "city_names": city_names,
             "city_codes": city_codes,
+            "city_codes_exclusive": city_codes_exclusive,
             "province_names": province_names,
             "province_codes": province_codes,
+            "province_codes_exclusive": province_codes_exclusive,
             "region_names": region_names,
             "region_codes": region_codes,
+            "region_codes_exclusive": region_codes_exclusive,
             "post_codes": post_codes,
+            "post_codes_exclusive": post_codes_exclusive,
             "street_address": street_address,
             "house_number": house_number,
+            "website_ip_address": website_ip_address,
+            # Contact
             "phone_number": phone_number,
+            "phone_number_exclusive": phone_number_exclusive,
             "email": email,
+            "email_exclusive": email_exclusive,
             "website": website,
+            "website_exclusive": website_exclusive,
+            # Categories
             "international_codes": international_codes,
+            "international_codes_exclusive": international_codes_exclusive,
             "infobel_codes": infobel_codes,
+            "infobel_codes_exclusive": infobel_codes_exclusive,
             "local_codes": local_codes,
+            "local_codes_exclusive": local_codes_exclusive,
             "alt_international_codes": alt_international_codes,
+            "alt_international_codes_exclusive": alt_international_codes_exclusive,
             "categories_keywords": categories_keywords,
+            "restrict_on_main_category": restrict_on_main_category,
+            # Presence
+            "has_address": has_address,
             "has_phone": has_phone,
+            "has_fax": has_fax,
+            "has_mobile": has_mobile,
             "has_email": has_email,
             "has_website": has_website,
             "has_national_id": has_national_id,
+            "has_web_contact": has_web_contact,
+            "has_contact": has_contact,
             "has_coordinates": has_coordinates,
             "has_linked_in": has_linked_in,
-            "can_match_any_business_filter": can_match_any_business_filter,
+            "has_logo": has_logo,
+            "has_admin": has_admin,
+            "has_marketability": has_marketability,
+            "has_building_geometry": has_building_geometry,
+            "has_shop_tool": has_shop_tool,
+            "has_payment": has_payment,
+            "has_digital_marketing": has_digital_marketing,
+            "has_e_shop": has_e_shop,
+            # Deduplication
+            "has_phone_deduplicated": has_phone_deduplicated,
+            "has_email_deduplicated": has_email_deduplicated,
+            "has_website_deduplicated": has_website_deduplicated,
+            "has_web_domain_deduplicated": has_web_domain_deduplicated,
+            "has_national_id_deduplicated": has_national_id_deduplicated,
+            "has_mobile_deduplicated": has_mobile_deduplicated,
+            "has_contact_deduplicated": has_contact_deduplicated,
+            # Business data
             "year_started_from": year_started_from,
             "year_started_to": year_started_to,
             "employees_total_from": employees_total_from,
@@ -300,32 +486,60 @@ def search_businesses(
             "sales_volume_from": sales_volume_from,
             "sales_volume_to": sales_volume_to,
             "sales_volume_currency": sales_volume_currency,
+            "sales_volum_reliability_codes": sales_volum_reliability_codes,
+            "sales_volum_reliability_codes_exclusive": sales_volum_reliability_codes_exclusive,
+            "family_members_from": family_members_from,
+            "family_members_to": family_members_to,
+            # Attributes
+            "is_published": is_published,
+            "is_vat": is_vat,
+            "filter_on_dncm": filter_on_dncm,
+            "publishing_strength_from": publishing_strength_from,
+            "publishing_strength_to": publishing_strength_to,
+            "linked_in_followers_from": linked_in_followers_from,
+            "linked_in_followers_to": linked_in_followers_to,
+            # Status & geo
             "status_codes": status_codes,
-            "legal_status_codes": legal_status_codes,
-            "ceo_name": ceo_name,
+            "status_codes_exclusive": status_codes_exclusive,
+            "geo_levels": geo_levels,
+            "geo_levels_exclusive": geo_levels_exclusive,
+            # Corporate
             "parent_unique_id": parent_unique_id,
+            "parent_unique_id_exclusive": parent_unique_id_exclusive,
             "global_ultimate_unique_id": global_ultimate_unique_id,
+            "global_ultimate_unique_id_exclusive": global_ultimate_unique_id_exclusive,
+            "global_ultimate_country_codes": global_ultimate_country_codes,
+            "global_ultimate_country_codes_exclusive": global_ultimate_country_codes_exclusive,
             "domestic_ultimate_unique_id": domestic_ultimate_unique_id,
+            "domestic_ultimate_unique_id_exclusive": domestic_ultimate_unique_id_exclusive,
+            # Executive
+            "ceo_name": ceo_name,
+            "ceo_title": ceo_title,
+            "executive_tags": executive_tags,
+            # Legal & identification
+            "legal_status_codes": legal_status_codes,
+            "legal_status_codes_exclusive": legal_status_codes_exclusive,
+            "national_identification_type_codes": national_identification_type_codes,
+            "national_identification_type_codes_exclusive": national_identification_type_codes_exclusive,
+            "import_export_agent_codes": import_export_agent_codes,
+            "import_export_agent_codes_exclusive": import_export_agent_codes_exclusive,
+            # Digital & technographic
+            "technographical_tags": technographical_tags,
+            "website_status_flags": website_status_flags,
+            "website_status_flags_exclusive": website_status_flags_exclusive,
+            "social_links": social_links,
+            "social_links_exclusive": social_links_exclusive,
+            # Language
+            "languages": languages,
+            "languages_exclusive": languages_exclusive,
+            # Settings
+            "can_match_any_business_filter": can_match_any_business_filter,
+            "try_any_location_match": try_any_location_match,
+            "international_phone_format": international_phone_format,
+            "validate_filters": validate_filters,
             "display_language": display_language,
             "page_size": page_size,
             "sorting_order": sorting_order,
-            "technographical_tags": technographical_tags,
-            "executive_tags": executive_tags,
-            "social_links": social_links,
-            "website_status_flags": website_status_flags,
-            "import_export_agent_codes": import_export_agent_codes,
-            "is_published": is_published,
-            "is_vat": is_vat,
-            "has_admin": has_admin,
-            "has_marketability": has_marketability,
-            "has_building_geometry": has_building_geometry,
-            "has_logo": has_logo,
-            "has_shop_tool": has_shop_tool,
-            "has_payment": has_payment,
-            "has_digital_marketing": has_digital_marketing,
-            "has_e_shop": has_e_shop,
-            "linked_in_followers_from": linked_in_followers_from,
-            "linked_in_followers_to": linked_in_followers_to,
             "data_type": data_type,
         }
 
@@ -333,13 +547,21 @@ def search_businesses(
             if v is not None:
                 kwargs[k] = v
 
-        # Handle coordinate option
+        # Handle inclusive coordinate option
         if coordinate_latitude is not None and coordinate_longitude is not None:
             coord = {"Latitude": coordinate_latitude, "Longitude": coordinate_longitude}
             if coordinate_distance is not None:
                 coord["Distance"] = coordinate_distance
             from .models.common import CoordinateOption
             kwargs["coordinate_options"] = [CoordinateOption(**coord)]
+
+        # Handle exclusive coordinate option
+        if coordinate_latitude_exclusive is not None and coordinate_longitude_exclusive is not None:
+            coord_excl = {"Latitude": coordinate_latitude_exclusive, "Longitude": coordinate_longitude_exclusive}
+            if coordinate_distance_exclusive is not None:
+                coord_excl["Distance"] = coordinate_distance_exclusive
+            from .models.common import CoordinateOption
+            kwargs["coordinate_options_exclusive"] = [CoordinateOption(**coord_excl)]
 
         result = _get_client().search.search(**kwargs)
         search_id = result["searchId"]
@@ -536,7 +758,12 @@ def get_provinces(country_code: str, region_code: str | None = None, language_co
         language_code: Display language for results (e.g. "en", "de", "fr").
     """
     try:
-        return _json(_get_client().locations.get_provinces(country_code, region_code=region_code, language_code=language_code))
+        client = _get_client()
+        if region_code:
+            data = client.locations.get_provinces_by_region(country_code, region_code, language_code=language_code)
+        else:
+            data = client.locations.get_provinces(country_code, language_code=language_code)
+        return _json(data)
     except InfobelAPIError as e:
         return _json({"error": str(e), "status_code": e.status_code})
 
@@ -551,11 +778,15 @@ def get_cities(country_code: str, keyword: str, province_code: str | None = None
     Args:
         country_code: ISO 3166-1 alpha-2 country code (e.g. "US", "GB").
         keyword: City name or partial name to search for (e.g. "New York", "Munich").
-        province_code: Optional province code to narrow results to a specific state/region.
+        province_code: Optional province code to narrow results to a specific province/state.
         language_code: Display language for results (e.g. "en", "de", "fr").
     """
     try:
-        return _json(_get_client().locations.get_cities(country_code, keyword, province_code=province_code, language_code=language_code))
+        results = _get_client().locations.search_keywords([keyword], country_code, language_code=language_code)
+        cities = [r for r in results if isinstance(r, dict) and r.get("type") == "City"]
+        if province_code:
+            cities = [c for c in cities if c.get("parentCode") == province_code]
+        return _json(cities)
     except InfobelAPIError as e:
         return _json({"error": str(e), "status_code": e.status_code})
 
@@ -607,6 +838,164 @@ def get_reliability_codes() -> str:
     """List reliability codes and their meanings."""
     try:
         return _json(_get_client().utils.get_reliability_codes())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_status_codes() -> str:
+    """List business status / hierarchy codes and their meanings.
+
+    Returns the BusinessStatusCode enum values used in the search_businesses
+    `status_codes` and `status_codes_exclusive` filters. Values indicate the
+    physical location type: SingleLocation (0), HQ (1), Branch (2).
+    """
+    try:
+        return _json(_get_client().utils.get_status_codes())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_geo_levels() -> str:
+    """List geographic precision levels used in the `geo_levels` search filter.
+
+    Returns codes and descriptions indicating the geocoding accuracy of a record
+    (e.g. address-level, city-level, country-level).
+    """
+    try:
+        return _json(_get_client().utils.get_geo_levels())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_currencies() -> str:
+    """List supported currencies for the `sales_volume_currency` search filter.
+
+    Returns currency codes such as Local (0), USD (1), EUR (2).
+    """
+    try:
+        return _json(_get_client().utils.get_currencies())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_sorting_orders() -> str:
+    """List available sorting order options for the `sorting_order` search parameter."""
+    try:
+        return _json(_get_client().utils.get_sorting_orders())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_website_status_flags() -> str:
+    """List website status flags used in the `website_status_flags` search filter.
+
+    Returns integer codes and descriptions indicating the crawl/availability
+    status of a business website.
+    """
+    try:
+        return _json(_get_client().utils.get_website_status_flags())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_social_links() -> str:
+    """List supported social media platforms for the `social_links` search filter.
+
+    Returns platform codes (e.g. "linkedin", "facebook") to use when filtering
+    businesses by social media presence.
+    """
+    try:
+        return _json(_get_client().utils.get_social_links())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_import_export_agent_codes() -> str:
+    """List import/export agent codes for the `import_export_agent_codes` search filter."""
+    try:
+        return _json(_get_client().utils.get_import_export_agent_codes())
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+def _filter_by_keyword(items: list[dict], keyword: str | None) -> list[dict]:
+    """Prefilter a list of dicts by keyword match against any value (case-insensitive)."""
+    if not keyword:
+        return items
+    kw = keyword.lower()
+    return [item for item in items if any(kw in str(v).lower() for v in item.values())]
+
+
+@mcp.tool()
+def get_legal_status_codes(country_code: str, keyword: str | None = None) -> str:
+    """List legal status codes (business legal forms) for a country.
+
+    Use the returned codes in the search_businesses `legal_status_codes` and
+    `legal_status_codes_exclusive` filters.
+
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "BE", "DE", "FR").
+        keyword: Optional keyword to filter results (e.g. "SA", "GmbH", "Ltd").
+    """
+    try:
+        data = _get_client().utils.get_legal_status_codes(country_code)
+        return _json(_filter_by_keyword(data, keyword))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_national_id_types(country_code: str) -> str:
+    """List national identification type codes for a country.
+
+    Use the returned codes in the search_businesses
+    `national_identification_type_codes` filter.
+
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "BE", "GB", "US").
+    """
+    try:
+        return _json(_get_client().utils.get_national_id_types(country_code))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_technographical_tags(keyword: str | None = None) -> str:
+    """List technographic tags for the `technographical_tags` search filter.
+
+    Technographic tags identify web technologies used by a business
+    (e.g. specific CMS, e-commerce platforms, analytics tools).
+
+    Args:
+        keyword: Optional keyword to filter results (e.g. "shopify", "wordpress").
+    """
+    try:
+        data = _get_client().utils.get_technographical_tags()
+        return _json(_filter_by_keyword(data, keyword))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def get_executive_tags(keyword: str | None = None) -> str:
+    """List executive tags for the `executive_tags` search filter.
+
+    Executive tags describe attributes or roles of business executives.
+
+    Args:
+        keyword: Optional keyword to filter results (e.g. "ceo", "founder").
+    """
+    try:
+        data = _get_client().utils.get_executive_tags()
+        return _json(_filter_by_keyword(data, keyword))
     except InfobelAPIError as e:
         return _json({"error": str(e), "status_code": e.status_code})
 
