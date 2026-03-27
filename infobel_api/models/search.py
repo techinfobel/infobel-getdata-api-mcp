@@ -30,8 +30,6 @@ class SearchInput(BaseModel):
     sorting_order: list[dict] | None = Field(default=None, alias="SortingOrder")
     detailed_counts: dict | None = Field(default=None, alias="DetailedCounts")
     settings: dict | None = Field(default=None, alias="Settings")
-    who: str | None = Field(default=None, alias="Who")
-    where: str | None = Field(default=None, alias="Where")
 
     # Country
     country_codes: list[str] | None = Field(default=None, alias="CountryCodes")

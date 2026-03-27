@@ -77,9 +77,6 @@ def search_businesses(  # noqa: PLR0913
     national_id_exclusive: list[str] | None = None,
     unique_ids: list[str] | None = None,
     unique_ids_exclusive: list[str] | None = None,
-    # Free-text
-    who: str | None = None,
-    where: str | None = None,
     # Location - cities
     city_names: list[str] | None = None,
     city_codes: list[str] | None = None,
@@ -283,8 +280,6 @@ def search_businesses(  # noqa: PLR0913
         national_id_exclusive: National registration numbers to exclude.
         unique_ids: Infobel unique IDs to look up directly.
         unique_ids_exclusive: Infobel unique IDs to exclude.
-        who: Free-text search across business name, category, or phone.
-        where: Free-text location search (city, postal code).
         city_names: Filter by city names (e.g. ["London", "Manchester"]).
         city_codes: Filter by city codes.
         city_codes_exclusive: City codes to exclude.
@@ -414,9 +409,6 @@ def search_businesses(  # noqa: PLR0913
             "national_id_exclusive": national_id_exclusive,
             "unique_ids": unique_ids,
             "unique_ids_exclusive": unique_ids_exclusive,
-            # Free-text
-            "who": who,
-            "where": where,
             # Location
             "city_names": city_names,
             "city_codes": city_codes,
