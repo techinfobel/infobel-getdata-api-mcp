@@ -85,7 +85,7 @@ class CategoriesService(BaseService):
         self,
         keywords: list[str],
         language_code: str,
-        category_type: str,
+        category_type: str | None = None,
         country_code: str | None = None,
     ) -> list[dict[str, Any]]:
         """Fan out over multiple keywords, deduplicate results by code."""
@@ -96,7 +96,7 @@ class CategoriesService(BaseService):
             if not kw:
                 continue
             response = self.search(language_code, kw, country_code=country_code)
-            items = response.get(category_type, []) if isinstance(response, dict) else response
+            items = response.get(category_type, []) if (isinstance(response, dict) and category_type) else (response if isinstance(response, list) else [])
             for item in items:
                 key = (item.get("code") if isinstance(item, dict) else item) or repr(item)
                 if key not in seen:
