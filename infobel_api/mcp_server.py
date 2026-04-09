@@ -37,7 +37,12 @@ mcp = FastMCP(
         "CRITICAL: search_businesses and get_search_results require record_fields "
         "(list of field names). Pass [] to get counts only. uniqueID is always "
         "returned. Use get_search_results with the returned search_id for more pages. "
-        "Only request the fields you need — this preserves your context window."
+        "Only request the fields you need — this preserves your context window. "
+        "CORPORATE LINKAGE: When searching for independent companies with no corporate "
+        "linkage or subsidiaries, always use status_codes: '0' = single-location "
+        "independent (no parent, no subs), '1' = group HQ, '2' = branch/subsidiary. "
+        "Match the status_codes to the user's intent — e.g. truly standalone companies "
+        "use status_codes=['0'], HQ-only use ['1'], branches use ['2']."
     ),
     lifespan=_lifespan,
 )
@@ -360,7 +365,20 @@ def search_businesses(  # noqa: PLR0913
         publishing_strength_to: Maximum publishing strength (max 100).
         linked_in_followers_from: Minimum LinkedIn followers.
         linked_in_followers_to: Maximum LinkedIn followers.
-        status_codes: Business hierarchy/status codes to include (use get_status_codes).
+        status_codes: Business status codes for corporate hierarchy filtering.
+                      Use ["0"] for single-location independent companies (no
+                      corporate linkage — no parent, no subsidiaries).
+                      Use ["1"] for headquarters (HQ) of a corporate group.
+                      Use ["2"] for branches of a larger company.
+                      IMPORTANT: When searching for independent companies with no
+                      corporate linkage or subsidiaries, always include the
+                      appropriate status_codes to avoid returning corporate
+                      subsidiaries or branch offices. Choose based on the use case:
+                        - Fully independent single site → status_codes=["0"]
+                        - Group HQ only → status_codes=["1"]
+                        - Branch offices only → status_codes=["2"]
+                        - All with no parent filter → status_codes=["0","1","2"]
+                      Use get_status_codes to retrieve the full list.
         status_codes_exclusive: Business status codes to exclude.
         geo_levels: Geographic precision levels to include (use get_geo_levels).
         geo_levels_exclusive: Geographic precision levels to exclude.
