@@ -23,6 +23,7 @@ class SearchInput(BaseModel):
     page_size: int | None = Field(default=20, alias="PageSize")
     display_language: str | None = Field(default=None, alias="DisplayLanguage")
     international_phone_format: bool | None = Field(default=None, alias="InternationalPhoneFormat")
+    validate_filters: bool | None = Field(default=None, alias="ValidateFilters")
     return_first_page: bool | None = Field(default=False, alias="ReturnFirstPage")
     track_scores: bool | None = Field(default=None, alias="TrackScores")
     try_any_location_match: bool | None = Field(default=None, alias="TryAnyLocationMatch")
@@ -96,8 +97,8 @@ class SearchInput(BaseModel):
     has_fax: bool | None = Field(default=None, alias="HasFax")
     has_mobile: bool | None = Field(default=None, alias="HasMobile")
     has_email: bool | None = Field(default=None, alias="HasEmail")
-    has_website: bool | None = Field(default=None, alias="HasWebsite")
-    has_national_id: bool | None = Field(default=None, alias="HasNationalID")
+    has_website: int | None = Field(default=None, alias="HasWebsite")  # PresenceType: 0=Ignore, 1=Has, 2=HasNot
+    has_national_id: int | None = Field(default=None, alias="HasNationalID")  # PresenceType: 0=Ignore, 1=Has, 2=HasNot
     has_web_contact: bool | None = Field(default=None, alias="HasWebContact")
     has_contact: bool | None = Field(default=None, alias="HasContact")
     has_coordinates: bool | None = Field(default=None, alias="HasCoordinates")
