@@ -10,3 +10,4 @@ notebooks/
 .ipynb_checkpoints/
 .claude
 .mcp.json
+scripts/
