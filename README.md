@@ -156,14 +156,10 @@ The package ships an [MCP](https://modelcontextprotocol.io/) server that exposes
 After installing the package, register the MCP server with:
 
 ```bash
-claude mcp add infobel -- infobel-mcp
+infobel-mcp add claude
 ```
 
-Once the package is published on PyPI, you can also skip the prior `pip install` step and run it through `uvx`:
-
-```bash
-claude mcp add infobel -- uvx infobel-api
-```
+This automatically uses the Python executable that has the package installed, regardless of whether you are in a venv, conda environment, or using the system Python.
 
 ### Configure Claude Code manually
 
@@ -181,7 +177,8 @@ Add this to either file:
   "mcpServers": {
     "infobel": {
       "type": "stdio",
-      "command": "infobel-mcp",
+      "command": "/path/to/your/python",
+      "args": ["-m", "infobel_api.mcp_server"],
       "env": {
         "INFOBEL_USERNAME": "your-username",
         "INFOBEL_PASSWORD": "your-password"
@@ -191,7 +188,13 @@ Add this to either file:
 }
 ```
 
-If the script is not on your `PATH`, use the full path to the installed `infobel-mcp` executable instead.
+Replace `/path/to/your/python` with the Python executable that has `infobel-api-mcp` installed. To find it, run this inside the environment where the package is installed:
+
+```bash
+python -c "import sys; print(sys.executable)"
+```
+
+For a venv the path typically looks like `/path/to/project/venv/bin/python`. For conda it looks like `/opt/conda/envs/myenv/bin/python`. The `infobel-mcp add claude` command above handles this automatically.
 
 ### Configure Gemini CLI manually
 
@@ -208,7 +211,8 @@ Add this to the `settings.json` file:
 {
   "mcpServers": {
     "infobel": {
-      "command": "infobel-mcp",
+      "command": "/path/to/your/python",
+      "args": ["-m", "infobel_api.mcp_server"],
       "env": {
         "INFOBEL_USERNAME": "${INFOBEL_USERNAME}",
         "INFOBEL_PASSWORD": "${INFOBEL_PASSWORD}"
@@ -218,7 +222,7 @@ Add this to the `settings.json` file:
 }
 ```
 
-If your `settings.json` already contains other top-level keys, merge the `mcpServers` block into the existing file instead of replacing it.
+Replace `/path/to/your/python` with the Python executable that has `infobel-api-mcp` installed (see the note in the Claude Code section above). If your `settings.json` already contains other top-level keys, merge the `mcpServers` block into the existing file instead of replacing it.
 
 ### Configure Codex manually
 
@@ -233,14 +237,15 @@ Add this to `config.toml`:
 
 ```toml
 [mcp_servers.infobel]
-command = "infobel-mcp"
+command = "/path/to/your/python"
+args = ["-m", "infobel_api.mcp_server"]
 
 [mcp_servers.infobel.env]
 INFOBEL_USERNAME = "your-username"
 INFOBEL_PASSWORD = "your-password"
 ```
 
-Codex CLI and the Codex IDE extension share the same MCP configuration.
+Replace `/path/to/your/python` with the Python executable that has `infobel-api-mcp` installed (see the note in the Claude Code section above). Codex CLI and the Codex IDE extension share the same MCP configuration.
 
 ### Available tools
 
