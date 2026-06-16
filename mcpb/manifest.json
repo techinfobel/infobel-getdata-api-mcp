@@ -1,0 +1,59 @@
+{
+  "manifest_version": "0.4",
+  "name": "infobel-getdata",
+  "display_name": "Infobel Business Search",
+  "version": "1.1.0",
+  "description": "Search 375M+ businesses worldwide via the Infobel GetData API.",
+  "long_description": "Exposes the Infobel GetData API to Claude as MCP tools: search businesses by name, location, category, employee count and more; fetch full or partial records by unique ID; browse category trees and location/reference lookups. Bring your own Infobel API credentials.",
+  "author": {
+    "name": "InfobelPro",
+    "url": "https://github.com/techinfobel/infobel-getdata-api-mcp"
+  },
+  "homepage": "https://github.com/techinfobel/infobel-getdata-api-mcp",
+  "documentation": "https://github.com/techinfobel/infobel-getdata-api-mcp#readme",
+  "support": "https://github.com/techinfobel/infobel-getdata-api-mcp/issues",
+  "license": "MIT",
+  "icon": "icon.png",
+  "keywords": ["infobel", "business-search", "company-data", "b2b", "firmographics"],
+  "server": {
+    "type": "uv",
+    "entry_point": "infobel_api/mcp_server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "python",
+        "-m",
+        "infobel_api.mcp_server"
+      ],
+      "env": {
+        "INFOBEL_USERNAME": "${user_config.username}",
+        "INFOBEL_PASSWORD": "${user_config.password}"
+      }
+    }
+  },
+  "user_config": {
+    "username": {
+      "type": "string",
+      "title": "Infobel Username",
+      "description": "Your Infobel GetData API username.",
+      "required": true
+    },
+    "password": {
+      "type": "string",
+      "title": "Infobel Password",
+      "description": "Your Infobel GetData API password.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  }
+}
