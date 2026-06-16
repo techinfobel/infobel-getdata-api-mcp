@@ -12,3 +12,5 @@ notebooks/
 .claude
 .mcp.json
 scripts/
+out/
+.playwright-mcp/

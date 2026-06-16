@@ -247,6 +247,49 @@ INFOBEL_PASSWORD = "your-password"
 
 Replace `/path/to/your/python` with the Python executable that has `infobel-api-mcp` installed (see the note in the Claude Code section above). Codex CLI and the Codex IDE extension share the same MCP configuration.
 
+### Claude Desktop (one-click extension)
+
+Claude Desktop is a separate app from Claude Code and uses a different config. The easiest path for end users is the bundled **Desktop Extension** (`.mcpb`): no Python install, no manual JSON, no PATH setup. The user double-clicks the bundle, Claude Desktop prompts for the Infobel username and password, and the tools appear.
+
+**Install (for users):**
+
+1. Download `infobel-getdata.mcpb` from the [releases page](https://github.com/techinfobel/infobel-getdata-api-mcp/releases).
+2. Double-click it (or in Claude Desktop: **Settings → Extensions → Install Extension…**).
+3. Enter your Infobel username and password in the dialog. The password is stored securely in the OS keychain.
+4. Fully quit and reopen Claude Desktop. The Infobel tools are now available.
+
+The bundle uses the MCPB `uv` server type — Claude Desktop runs [`uv`](https://docs.astral.sh/uv/) to resolve dependencies cross-platform at install time, so users do not need their own Python.
+
+**Build the bundle (for maintainers):**
+
+```bash
+./build_mcpb.sh          # → dist/infobel-getdata.mcpb
+```
+
+Requires Node.js (the script invokes `npx @anthropic-ai/mcpb`). The manifest lives in `mcpb/manifest.json`; bump its `version` on each release. Attach the resulting `.mcpb` to a GitHub Release.
+
+**Configure Claude Desktop manually** (alternative to the extension): edit the config file directly —
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\\Claude\\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "infobel": {
+      "command": "/path/to/your/python",
+      "args": ["-m", "infobel_api.mcp_server"],
+      "env": {
+        "INFOBEL_USERNAME": "your-username",
+        "INFOBEL_PASSWORD": "your-password"
+      }
+    }
+  }
+}
+```
+
+Claude Desktop does not inherit your shell environment or expand `${VAR}` placeholders, so the `command` must be an absolute Python path and credentials must be literal values. Fully restart the app after editing.
+
 ### Available tools
 
 | Tool | Description |
