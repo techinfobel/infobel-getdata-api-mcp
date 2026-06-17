@@ -160,6 +160,8 @@ def search_businesses(  # noqa: PLR0913
     year_started_to: str | None = None,
     employees_total_from: int | None = None,
     employees_total_to: int | None = None,
+    employees_here_from: int | None = None,
+    employees_here_to: int | None = None,
     sales_volume_from: int | None = None,
     sales_volume_to: int | None = None,
     sales_volume_currency: str | None = None,
@@ -349,8 +351,10 @@ def search_businesses(  # noqa: PLR0913
         has_contact_deduplicated: Deduplicate on contact.
         year_started_from: Minimum year started (e.g. "2000").
         year_started_to: Maximum year started (e.g. "2020").
-        employees_total_from: Minimum employee count.
-        employees_total_to: Maximum employee count.
+        employees_total_from: Minimum total employee count (whole company).
+        employees_total_to: Maximum total employee count (whole company).
+        employees_here_from: Minimum employee count at this location.
+        employees_here_to: Maximum employee count at this location.
         sales_volume_from: Minimum sales volume.
         sales_volume_to: Maximum sales volume.
         sales_volume_currency: Currency for sales volume (use get_currencies for codes).
@@ -493,6 +497,8 @@ def search_businesses(  # noqa: PLR0913
             "year_started_to": year_started_to,
             "employees_total_from": employees_total_from,
             "employees_total_to": employees_total_to,
+            "employees_here_from": employees_here_from,
+            "employees_here_to": employees_here_to,
             "sales_volume_from": sales_volume_from,
             "sales_volume_to": sales_volume_to,
             "sales_volume_currency": sales_volume_currency,

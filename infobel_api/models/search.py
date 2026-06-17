@@ -127,6 +127,8 @@ class SearchInput(BaseModel):
     year_started_to: str | None = Field(default=None, alias="YearStartedTo")
     employees_total_from: int | None = Field(default=None, alias="EmployeesTotalFrom")
     employees_total_to: int | None = Field(default=None, alias="EmployeesTotalTo")
+    employees_here_from: int | None = Field(default=None, alias="EmployeesHereFrom")
+    employees_here_to: int | None = Field(default=None, alias="EmployeesHereTo")
     sales_volume_from: int | None = Field(default=None, alias="SalesVolumeFrom")
     sales_volume_to: int | None = Field(default=None, alias="SalesVolumeTo")
     sales_volume_currency: str | None = Field(default=None, alias="SalesVolumeCurrency")
