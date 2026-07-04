@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -11,6 +12,11 @@ from mcp.server.fastmcp import FastMCP
 
 from .client import InfobelClient
 from .exceptions import InfobelAPIError
+from .knowledge import (
+    LOCATION_TYPE_TO_FILTER,
+    category_code_warnings,
+    category_keyword_cautions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,12 @@ mcp = FastMCP(
     name="infobel",
     instructions=(
         "Infobel business search API — search 375M+ companies worldwide. "
+        "PREFERRED WORKFLOW: for 'how many' / market-sizing questions use "
+        "count_businesses (set group_by_country=True for a per-country table). "
+        "Resolve free-text industries to codes with resolve_categories and place "
+        "names to the right filter level with resolve_location BEFORE searching, "
+        "and heed the warnings they return. Zero-result searches include a "
+        "diagnosis block that identifies the likely blocking filter. "
         "CRITICAL: search_businesses and get_search_results require record_fields "
         "(list of field names). Pass [] to get counts only. uniqueID is always "
         "returned. Use get_search_results with the returned search_id for more pages. "
@@ -65,6 +77,102 @@ def _ensure_unique_id(fields: list[str]) -> list[str]:
     if "uniqueID" not in fields:
         return ["uniqueID"] + list(fields)
     return list(fields)
+
+
+# ---------------------------------------------------------------------------
+# Zero-result diagnosis
+# ---------------------------------------------------------------------------
+
+_MAX_FANOUT_WORKERS = 8
+_MAX_DIAGNOSIS_PROBES = 5
+
+# Filter groups probed when a search returns zero results. Keys are
+# SearchInput kwarg names; settings-type kwargs (country_codes,
+# return_first_page, page_size, ...) are never removed by a probe.
+_DIAGNOSIS_GROUPS: dict[str, tuple[str, ...]] = {
+    "business_name": ("business_name",),
+    "location": (
+        "city_names", "city_codes", "province_names", "province_codes",
+        "region_names", "region_codes", "post_codes", "street_address",
+        "house_number",
+    ),
+    "categories": (
+        "infobel_codes", "international_codes", "alt_international_codes",
+        "local_codes", "categories_keywords",
+    ),
+    "contact_presence": (
+        "has_phone", "has_email", "has_website", "has_mobile", "has_fax",
+        "has_web_contact", "has_contact",
+    ),
+    "size_and_age": (
+        "employees_total_from", "employees_total_to",
+        "employees_here_from", "employees_here_to",
+        "sales_volume_from", "sales_volume_to",
+        "year_started_from", "year_started_to",
+    ),
+    "status_and_legal": ("status_codes", "legal_status_codes"),
+}
+
+
+def _diagnose_zero_results(base_kwargs: dict[str, Any]) -> dict[str, Any] | None:
+    """Explain a zero-result search by re-running it without one filter group at a time.
+
+    Each probe is a counts-only search with one group of filters removed,
+    executed in parallel. Groups whose removal restores results are reported
+    as the likely blockers.
+    """
+    present_groups = {
+        group: [k for k in keys if k in base_kwargs]
+        for group, keys in _DIAGNOSIS_GROUPS.items()
+        if any(k in base_kwargs for k in keys)
+    }
+    if not present_groups:
+        return None
+    if len(present_groups) == 1:
+        group = next(iter(present_groups))
+        return {
+            "note": (
+                f"Only one filter group ({group}) is set and it matches nothing "
+                "in the selected countries. Check its values: exact spelling via "
+                "resolve_location for places, correct code system and granularity "
+                "via resolve_categories for industries."
+            )
+        }
+
+    probe_items = list(present_groups.items())[:_MAX_DIAGNOSIS_PROBES]
+
+    def _probe(item: tuple[str, list[str]]) -> dict[str, Any]:
+        group, keys = item
+        probe_kwargs = {k: v for k, v in base_kwargs.items() if k not in keys}
+        try:
+            result = _get_client().search.search(**probe_kwargs)
+            return {
+                "removed_filter_group": group,
+                "removed_parameters": keys,
+                "total_without_it": result.get("counts", {}).get("total", 0),
+            }
+        except InfobelAPIError as e:
+            return {"removed_filter_group": group, "removed_parameters": keys, "error": str(e)}
+
+    with ThreadPoolExecutor(max_workers=min(len(probe_items), _MAX_FANOUT_WORKERS)) as pool:
+        probes = list(pool.map(_probe, probe_items))
+
+    blocking = [p["removed_filter_group"] for p in probes if p.get("total_without_it", 0) > 0]
+    diagnosis: dict[str, Any] = {"probes": probes}
+    if blocking:
+        diagnosis["likely_blocking_filters"] = blocking
+        diagnosis["hint"] = (
+            "Removing the listed filter group(s) restores results, so their values "
+            "are the likely problem. Verify them before rerunning: places via "
+            "resolve_location (correct level: city vs province vs region), industry "
+            "codes via resolve_categories (correct system and granularity)."
+        )
+    else:
+        diagnosis["hint"] = (
+            "No single filter group explains the zero result; the combination of "
+            "filters is jointly too narrow for these countries."
+        )
+    return diagnosis
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +384,9 @@ def search_businesses(  # noqa: PLR0913
       counts    — total, hasPhone, hasEmail, etc.
       records   — list of field-filtered records (empty when record_fields=[])
       page      — current page number (omitted when record_fields=[])
+      diagnosis — only when total is 0 and 2+ filter groups are set: which
+                  filter group is likely blocking (from parallel counts-only
+                  probes that each drop one group)
 
     Args:
         country_codes: ISO 3166-1 alpha-2 country codes (e.g. ["GB", "DE"]).
@@ -587,6 +698,13 @@ def search_businesses(  # noqa: PLR0913
             "counts": result.get("counts", {}),
         }
 
+        if result.get("counts", {}).get("total", 0) == 0:
+            diagnosis = _diagnose_zero_results(kwargs)
+            if diagnosis:
+                output["diagnosis"] = diagnosis
+            output["records"] = []
+            return _json(output)
+
         if record_fields:
             fields = _ensure_unique_id(record_fields)
             records_resp = _get_client().search.post_records(search_id, 1, fields)
@@ -630,6 +748,287 @@ def get_search_status(search_id: int) -> str:
     """
     try:
         return _json(_get_client().search.get_status(search_id))
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+# ---------------------------------------------------------------------------
+# Task tools — counts and resolvers
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def count_businesses(  # noqa: PLR0913
+    country_codes: list[str],
+    business_name: list[str] | None = None,
+    city_names: list[str] | None = None,
+    city_codes: list[str] | None = None,
+    province_codes: list[str] | None = None,
+    region_codes: list[str] | None = None,
+    post_codes: list[str] | None = None,
+    infobel_codes: list[str] | None = None,
+    international_codes: list[str] | None = None,
+    alt_international_codes: list[str] | None = None,
+    local_codes: list[str] | None = None,
+    categories_keywords: list[str] | None = None,
+    has_phone: bool | None = None,
+    has_email: bool | None = None,
+    has_mobile: bool | None = None,
+    has_website: bool | None = None,
+    employees_total_from: int | None = None,
+    employees_total_to: int | None = None,
+    year_started_from: str | None = None,
+    year_started_to: str | None = None,
+    status_codes: list[str] | None = None,
+    data_type: str | None = None,
+    group_by_country: bool = False,
+) -> str:
+    """Count businesses matching filters. PREFERRED tool for "how many" questions.
+
+    Always counts-only: no records are fetched, so it is the fastest and
+    cheapest way to answer sizing, coverage, and market questions. Use
+    search_businesses only when actual records are needed.
+
+    With group_by_country=True and multiple country codes, one search per
+    country runs in parallel and the result is a per-country table (sorted by
+    total, each row carrying its own searchId) plus the sum over all countries.
+
+    Resolve codes first: resolve_categories for industry keywords,
+    resolve_location for place names (it also tells you which filter level to
+    use). On zero results a diagnosis block identifies the likely blocking
+    filter group.
+
+    Returns JSON with either {searchId, counts, filters} or, when grouped,
+    {group_by, total_all_countries, rows, filters}. Every count is tied to a
+    searchId so the exact scope can be reproduced.
+
+    Args:
+        country_codes: ISO 3166-1 alpha-2 country codes (e.g. ["GB", "DE"]).
+        business_name: Business names to match.
+        city_names: City names (prefer city_codes from resolve_location).
+        city_codes: City codes from resolve_location.
+        province_codes: Province codes from resolve_location.
+        region_codes: Region codes from resolve_location.
+        post_codes: Postal/zip codes.
+        infobel_codes: Infobel category codes from resolve_categories.
+        international_codes: ISIC codes from resolve_categories.
+        alt_international_codes: NACE codes from resolve_categories.
+        local_codes: Country-local codes (SIC, NAF, ...) from resolve_categories.
+        categories_keywords: Free-text category keywords (less precise than codes).
+        has_phone: Only businesses with (True) / without (False) a phone number.
+        has_email: Only businesses with (True) / without (False) an email address.
+        has_mobile: Only businesses with (True) / without (False) a mobile number.
+        has_website: Only businesses with (True) / without (False) a website.
+        employees_total_from: Minimum total employee count.
+        employees_total_to: Maximum total employee count.
+        year_started_from: Minimum year started (e.g. "2000").
+        year_started_to: Maximum year started (e.g. "2020").
+        status_codes: Hierarchy status: "0" single-location independent,
+                      "1" group HQ, "2" branch.
+        data_type: "Business" (default), "YellowPages", or "WhitePages".
+        group_by_country: When True with 2+ countries, return a per-country table.
+    """
+    try:
+        _locals: dict[str, Any] = {
+            "business_name": business_name,
+            "city_names": city_names,
+            "city_codes": city_codes,
+            "province_codes": province_codes,
+            "region_codes": region_codes,
+            "post_codes": post_codes,
+            "infobel_codes": infobel_codes,
+            "international_codes": international_codes,
+            "alt_international_codes": alt_international_codes,
+            "local_codes": local_codes,
+            "categories_keywords": categories_keywords,
+            "has_phone": has_phone,
+            "has_email": has_email,
+            "has_mobile": has_mobile,
+            "employees_total_from": employees_total_from,
+            "employees_total_to": employees_total_to,
+            "year_started_from": year_started_from,
+            "year_started_to": year_started_to,
+            "status_codes": status_codes,
+            "data_type": data_type,
+        }
+        filters = {k: v for k, v in _locals.items() if v is not None}
+        if has_website is not None:
+            # API PresenceType: 1 = has, 2 = has not
+            filters["has_website"] = 1 if has_website else 2
+
+        base_kwargs: dict[str, Any] = dict(filters)
+        base_kwargs["return_first_page"] = False
+
+        if group_by_country and len(country_codes) > 1:
+            def _count_one(cc: str) -> dict[str, Any]:
+                kwargs = dict(base_kwargs)
+                kwargs["country_codes"] = [cc]
+                result = _get_client().search.search(**kwargs)
+                return {
+                    "country": cc,
+                    "searchId": result.get("searchId"),
+                    "counts": result.get("counts", {}),
+                }
+
+            with ThreadPoolExecutor(max_workers=min(len(country_codes), _MAX_FANOUT_WORKERS)) as pool:
+                rows = list(pool.map(_count_one, country_codes))
+            rows.sort(key=lambda r: r["counts"].get("total", 0), reverse=True)
+            overall = sum(r["counts"].get("total", 0) for r in rows)
+            output: dict[str, Any] = {
+                "group_by": "country",
+                "total_all_countries": overall,
+                "rows": rows,
+                "filters": {"country_codes": country_codes, **filters},
+            }
+            if overall == 0:
+                kwargs_all = dict(base_kwargs)
+                kwargs_all["country_codes"] = country_codes
+                diagnosis = _diagnose_zero_results(kwargs_all)
+                if diagnosis:
+                    output["diagnosis"] = diagnosis
+        else:
+            kwargs = dict(base_kwargs)
+            kwargs["country_codes"] = country_codes
+            result = _get_client().search.search(**kwargs)
+            counts = result.get("counts", {})
+            output = {
+                "searchId": result.get("searchId"),
+                "counts": counts,
+                "filters": {"country_codes": country_codes, **filters},
+            }
+            if counts.get("total", 0) == 0:
+                diagnosis = _diagnose_zero_results(kwargs)
+                if diagnosis:
+                    output["diagnosis"] = diagnosis
+
+        return _json(output)
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def resolve_categories(
+    keywords: list[str],
+    country_code: str | None = None,
+    language_code: str = "en",
+) -> str:
+    """Resolve free-text industry keywords to category codes across all systems.
+
+    Searches the Infobel, ISIC (international), and NACE (alt-international)
+    systems in parallel, plus the country-local system (SIC, NAF, WZ, ...) when
+    country_code is given. Use this BEFORE search_businesses/count_businesses
+    and pass the chosen codes via the search_parameter named in each block.
+
+    The warnings list flags known code conflations (codes covering more than
+    one everyday concept). Ignoring them produces silently inflated counts, so
+    surface them to the user when relevant.
+
+    Args:
+        keywords: One or more search terms (e.g. ["restaurant"], ["plumber", "plumbing"]).
+        country_code: ISO 3166-1 alpha-2 code; adds the country-local code system.
+        language_code: Display language for results (e.g. "en", "fr", "de").
+    """
+    try:
+        client = _get_client()
+        tasks: list[tuple[str, str, Any]] = [
+            ("infobel", "infobel_codes",
+             lambda: client.categories.search_infobel(keywords, language_code)),
+            ("international_isic", "international_codes",
+             lambda: client.categories.search_international(keywords, language_code)),
+            ("nace", "alt_international_codes",
+             lambda: client.categories.search_alt_international(keywords, language_code)),
+        ]
+        if country_code:
+            tasks.append(
+                ("local", "local_codes",
+                 lambda: client.categories.search_local(keywords, country_code, language_code))
+            )
+
+        def _run(task: tuple[str, str, Any]) -> tuple[str, str, list, str | None]:
+            key, param, fn = task
+            try:
+                return key, param, fn(), None
+            except InfobelAPIError as e:
+                return key, param, [], str(e)
+
+        with ThreadPoolExecutor(max_workers=len(tasks)) as pool:
+            results = list(pool.map(_run, tasks))
+
+        systems: dict[str, Any] = {}
+        warnings = category_keyword_cautions(keywords)
+        for key, param, items, error in results:
+            block: dict[str, Any] = {"search_parameter": param, "matches": items}
+            if error:
+                block["error"] = error
+            systems[key] = block
+            if key == "infobel":
+                warnings.extend(category_code_warnings(items))
+
+        return _json({
+            "systems": systems,
+            "warnings": warnings,
+            "next_step": (
+                "Pass the chosen codes to count_businesses or search_businesses "
+                "via the search_parameter named in each system block."
+            ),
+        })
+    except InfobelAPIError as e:
+        return _json({"error": str(e), "status_code": e.status_code})
+
+
+@mcp.tool()
+def resolve_location(text: str, country_code: str, language_code: str = "en") -> str:
+    """Resolve a place name to location codes and the correct search filter level.
+
+    Returns candidates grouped by location type (City, Province, Region), each
+    with the search parameter its codes belong to (city_codes, province_codes,
+    region_codes). When a name exists at more than one level, a warning
+    explains the choice: a city filter counts that city only, while a
+    province or region filter counts the whole area. Use this BEFORE
+    search_businesses/count_businesses instead of guessing name filters.
+
+    Args:
+        text: Place name or partial name (e.g. "Munich", "São Paulo").
+        country_code: ISO 3166-1 alpha-2 country code (e.g. "DE", "BR").
+        language_code: Display language for results (e.g. "en", "de", "fr").
+    """
+    try:
+        results = _get_client().locations.search_keywords(
+            [text], country_code, language_code=language_code
+        )
+        groups: dict[str, list] = {}
+        for item in results:
+            item_type = item.get("type", "Unknown") if isinstance(item, dict) else "Unknown"
+            groups.setdefault(item_type, []).append(item)
+
+        location_types: dict[str, Any] = {}
+        for item_type, items in groups.items():
+            param = LOCATION_TYPE_TO_FILTER.get(item_type)
+            location_types[item_type] = {
+                "search_parameter": param if param else "no direct search filter for this type",
+                "matches": items,
+            }
+
+        warnings: list[str] = []
+        matched_levels = [t for t in groups if t in LOCATION_TYPE_TO_FILTER]
+        if len(matched_levels) > 1:
+            warnings.append(
+                f"'{text}' matches more than one location level ({', '.join(sorted(matched_levels))}). "
+                "Filtering at the wrong level is a common source of wrong counts: a city "
+                "filter counts the city only, while a province/region filter counts the "
+                "whole area. Confirm which level the user means."
+            )
+        if not results:
+            warnings.append(
+                f"No location in {country_code} matches '{text}'. Check the spelling "
+                "or try the local-language name."
+            )
+
+        return _json({
+            "query": text,
+            "country_code": country_code,
+            "location_types": location_types,
+            "warnings": warnings,
+        })
     except InfobelAPIError as e:
         return _json({"error": str(e), "status_code": e.status_code})
 

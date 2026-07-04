@@ -294,6 +294,9 @@ Claude Desktop does not inherit your shell environment or expand `${VAR}` placeh
 
 | Tool | Description |
 |------|-------------|
+| `count_businesses` | Counts-only search with optional per-country breakdown (parallel) and zero-result diagnosis — preferred for "how many" questions |
+| `resolve_categories` | Resolve keywords to category codes across all four systems in parallel, with known-conflation warnings |
+| `resolve_location` | Resolve a place name to codes and the correct filter level (city vs province vs region) |
 | `search_businesses` | Search by name, location, category, and more |
 | `get_search_results` | Fetch additional pages from a previous search |
 | `get_record` | Get a full business record by unique ID |
@@ -337,6 +340,34 @@ get_search_results(
   record_fields=["businessName", "address1", "city", "phone"]
 )
 ```
+
+### Counting and resolving (recommended flow)
+
+For sizing questions, prefer the counts-only task tool. With `group_by_country=True`
+the per-country searches run in parallel server-side:
+
+> "How many restaurants with a website do we have in France, Germany and Belgium?"
+
+```
+resolve_categories(keywords=["restaurant"])            # pick the right codes first
+count_businesses(
+  country_codes=["FR", "DE", "BE"],
+  infobel_codes=["..."],
+  has_website=True,
+  group_by_country=True
+)
+```
+
+`resolve_location` tells you which filter level a place name belongs to (a city
+filter counts the city only; a province/region filter counts the whole area):
+
+```
+resolve_location(text="São Paulo", country_code="BR")
+```
+
+When a search matches nothing, the response includes a `diagnosis` block that
+re-runs the search without one filter group at a time (in parallel, counts-only)
+and reports which filter group is likely blocking the results.
 
 ---
 

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from .._base_service import BaseService
+
+_MAX_KEYWORD_WORKERS = 8
 
 
 class LocationsService(BaseService):
@@ -61,14 +64,23 @@ class LocationsService(BaseService):
         country_code: str,
         language_code: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Fan out over multiple keywords, deduplicate results by code."""
+        """Fan out over multiple keywords in parallel, deduplicate results by code.
+
+        Responses are merged in keyword order so deduplication stays deterministic.
+        """
+        cleaned = [kw.strip() for kw in keywords if kw and kw.strip()]
+        if not cleaned:
+            return []
+        if len(cleaned) == 1:
+            raws = [self.search(country_code, cleaned[0], language_code=language_code)]
+        else:
+            with ThreadPoolExecutor(max_workers=min(len(cleaned), _MAX_KEYWORD_WORKERS)) as pool:
+                raws = list(
+                    pool.map(lambda kw: self.search(country_code, kw, language_code=language_code), cleaned)
+                )
         seen: set[str] = set()
         results: list[dict[str, Any]] = []
-        for kw in keywords:
-            kw = kw.strip()
-            if not kw:
-                continue
-            raw = self.search(country_code, kw, language_code=language_code)
+        for raw in raws:
             items: list[Any] = []
             if isinstance(raw, dict):
                 for v in raw.values():
