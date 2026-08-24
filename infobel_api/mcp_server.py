@@ -7,7 +7,21 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError as exc:
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _mcp_version
+
+    try:
+        _resolved = _mcp_version("mcp")
+    except PackageNotFoundError:
+        _resolved = "not installed"
+    raise SystemExit(
+        "infobel-api-mcp requires MCP Python SDK 1.x (mcp[cli]>=1.2,<2); "
+        f"resolved mcp {_resolved}, which does not provide mcp.server.fastmcp. "
+        "Update or reinstall the extension to get a compatible lock."
+    ) from exc
 
 from .client import InfobelClient
 from .exceptions import InfobelAPIError
